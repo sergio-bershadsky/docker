@@ -127,13 +127,27 @@ in production deployments.
 Add the branch name to the `BRANCHES` env var in the image's workflow file.
 The single Dockerfile handles all branches via the version `ARG`.
 
+## Documentation rules
+
+ghcr.io package pages display the **root `README.md`** from the linked repository --
+there is no way to show a per-image README. Because of this:
+
+- The **root `README.md`** must contain a description and registry/package links for
+  every image. This is what users see on the ghcr.io package page.
+- Each **`<image-name>/README.md`** contains full documentation for that image
+  (usage, addons, build instructions, etc.).
+- Both READMEs must include direct links to the ghcr.io package page:
+  `https://github.com/sergio-bershadsky/docker/pkgs/container/<image-name>`
+- When adding or updating an image, keep both READMEs in sync.
+
 ## Adding a new image
 
 1. Create `<image-name>/Dockerfile` with `ARG`-based version parameterization.
 2. Create `<image-name>/.dockerignore`.
-3. Create `.github/workflows/<image-name>.yaml` following the workflow rules above.
-4. Update `README.md` with the new image entry.
-5. Add the package name to `cleanup.yaml` for untagged manifest pruning.
+3. Create `<image-name>/README.md` with full image documentation and package links.
+4. Create `.github/workflows/<image-name>.yaml` following the workflow rules above.
+5. Update root `README.md` with the new image entry, description, and package link.
+6. Add the package name to `cleanup.yaml` for untagged manifest pruning.
 
 ## Local development
 
@@ -166,5 +180,5 @@ Before merging any PR, verify:
 - [ ] OCI labels are set (at minimum `image.source`)
 - [ ] Workflow includes all required steps (cache, SBOM, signing, scanning)
 - [ ] No untrusted input in workflow `run:` commands
-- [ ] README updated if adding a new image
+- [ ] Root README and `<image>/README.md` both updated with package links
 - [ ] Local build succeeds for all target versions

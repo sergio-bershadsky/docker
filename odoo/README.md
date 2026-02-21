@@ -1,7 +1,12 @@
 # Odoo
 
-Custom Odoo Docker images with pre-installed OCA addons, published to
-`ghcr.io/sergio-bershadsky/odoo`.
+Custom Odoo Docker images with pre-installed OCA addons.
+
+| | Link |
+|-|------|
+| Registry | `ghcr.io/sergio-bershadsky/odoo` |
+| Package page | [github.com/sergio-bershadsky/docker/pkgs/container/odoo](https://github.com/sergio-bershadsky/docker/pkgs/container/odoo) |
+| Source | [github.com/sergio-bershadsky/docker/tree/main/odoo](https://github.com/sergio-bershadsky/docker/tree/main/odoo) |
 
 ## Stateless backend design
 

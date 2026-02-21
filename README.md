@@ -16,9 +16,9 @@ This makes containers fully disposable and horizontally scalable -- no persisten
 volumes needed on the application tier. Works with Kubernetes, AWS ECS/Fargate,
 Google Cloud Run, Azure Container Apps, Heroku, Fly.io, or plain Docker Compose.
 
-| Tracked branches | Tags | Registry |
-|-----------------|------|----------|
-| 17.0, 18.0, 19.0 | `:18.0-20260217` (pinned), `:18.0` (rolling) | `ghcr.io/sergio-bershadsky/odoo` |
+| Tracked branches | Tags | Registry | Package |
+|-----------------|------|----------|---------|
+| 17.0, 18.0, 19.0 | `:18.0-20260217` (pinned), `:18.0` (rolling) | `ghcr.io/sergio-bershadsky/odoo` | [ghcr.io](https://github.com/sergio-bershadsky/docker/pkgs/container/odoo) |
 
 ```bash
 docker pull ghcr.io/sergio-bershadsky/odoo:18.0
