@@ -4,9 +4,27 @@ Custom Docker images published to `ghcr.io/sergio-bershadsky/`.
 
 ## Images
 
-| Image | Tracked branches | Registry | Docs |
-|-------|-----------------|----------|------|
-| [Odoo](odoo/) | 17.0, 18.0, 19.0 | `ghcr.io/sergio-bershadsky/odoo` | [odoo/README.md](odoo/README.md) |
+### [Odoo](odoo/) -- `ghcr.io/sergio-bershadsky/odoo`
+
+Stateless Odoo images for cloud-native deployments. Built on top of the official
+`odoo` image with OCA addons that move all state out of the container:
+
+- **Sessions** stored in PostgreSQL (not local files) via `session_db`
+- **Attachments** stored in S3-compatible object storage (not local filestore) via `fs_attachment`
+
+This makes containers fully disposable and horizontally scalable -- no persistent
+volumes needed on the application tier. Works with Kubernetes, AWS ECS/Fargate,
+Google Cloud Run, Azure Container Apps, Heroku, Fly.io, or plain Docker Compose.
+
+| Tracked branches | Tags | Registry |
+|-----------------|------|----------|
+| 17.0, 18.0, 19.0 | `:18.0-20260217` (pinned), `:18.0` (rolling) | `ghcr.io/sergio-bershadsky/odoo` |
+
+```bash
+docker pull ghcr.io/sergio-bershadsky/odoo:18.0
+```
+
+Full documentation: [odoo/README.md](odoo/README.md)
 
 ## How it works
 
