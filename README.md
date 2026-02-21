@@ -6,7 +6,9 @@ Custom Docker images published to `ghcr.io/sergio-bershadsky/`.
 
 ### Odoo
 
-> [Source](odoo/) | [Package](https://github.com/sergio-bershadsky/docker/pkgs/container/odoo) | [Full docs](odoo/README.md) | [All tags](odoo/TAGS.md)
+| Source | Package | Full docs | All tags |
+|--------|---------|-----------|----------|
+| [odoo/](odoo/) | [ghcr.io/…/odoo](https://github.com/sergio-bershadsky/docker/pkgs/container/odoo) | [README](odoo/README.md) | [TAGS.md](odoo/TAGS.md) |
 
 Stateless Odoo images for cloud-native deployments. Built on top of the official
 `odoo` image with OCA addons that move all state out of the container:
