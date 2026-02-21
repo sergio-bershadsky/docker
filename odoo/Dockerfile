@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # OCA storage stack (fsspec-based) + session management
 # Note: adjust packages based on PyPI availability;
 #       fall back to pip+git if not yet published.
-RUN pip3 install --no-cache-dir \
+RUN pip3 install --no-cache-dir --break-system-packages \
     odoo-addon-session_db \
     odoo-addon-fs_storage \
     odoo-addon-fs_attachment \
