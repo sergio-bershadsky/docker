@@ -1,0 +1,151 @@
+name: "Build: Odoo"
+
+on:
+  schedule:
+    - cron: "0 4 * * *"      # Daily at 04:00 UTC
+  workflow_dispatch: {}       # Manual trigger
+
+env:
+  BRANCHES: "17.0 18.0 19.0"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: sergio-bershadsky/odoo
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.check.outputs.matrix }}
+    steps:
+      - name: Check for new Odoo commits
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          INCLUDES='[]'
+
+          # Get a ghcr.io token to check existing tags
+          GHCR_TOKEN=$(curl -sf \
+            -u "_:${GH_TOKEN}" \
+            "https://ghcr.io/token?scope=repository:${IMAGE_NAME}:pull" \
+            | jq -r '.token' || true)
+
+          for BRANCH in $BRANCHES; do
+            echo "--- ${BRANCH} ---"
+
+            # Get latest commit date + short SHA from odoo/odoo branch
+            COMMIT_JSON=$(gh api "repos/odoo/odoo/branches/${BRANCH}" \
+              --jq '{date: .commit.commit.committer.date, sha: .commit.sha}' 2>/dev/null || true)
+
+            if [ -z "$COMMIT_JSON" ] || [ "$COMMIT_JSON" = "null" ]; then
+              echo "  Branch not found, skipping"
+              continue
+            fi
+
+            COMMIT_DATE=$(echo "$COMMIT_JSON" | jq -r '.date')
+            COMMIT_SHA=$(echo "$COMMIT_JSON" | jq -r '.sha' | head -c 7)
+            DATE_TAG=$(date -u -d "$COMMIT_DATE" +%Y%m%d 2>/dev/null \
+              || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$COMMIT_DATE" +%Y%m%d)
+
+            IMAGE_TAG="${BRANCH}-${DATE_TAG}"
+            echo "  Latest commit: ${COMMIT_SHA} (${DATE_TAG})"
+
+            # Check if we already built this tag
+            TAG_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer ${GHCR_TOKEN}" \
+              "https://${REGISTRY}/v2/${IMAGE_NAME}/manifests/${IMAGE_TAG}" 2>/dev/null || echo "000")
+
+            if [ "$TAG_STATUS" = "200" ]; then
+              echo "  Already built: ${IMAGE_TAG}, skipping"
+              continue
+            fi
+
+            echo "  New build needed: ${IMAGE_TAG}"
+            INCLUDES=$(echo "$INCLUDES" | jq -c \
+              --arg branch "$BRANCH" \
+              --arg tag "$IMAGE_TAG" \
+              --arg sha "$COMMIT_SHA" \
+              --arg date "$DATE_TAG" \
+              '. + [{"branch": $branch, "image_tag": $tag, "sha": $sha, "date": $date}]')
+          done
+
+          echo "matrix={\"include\":${INCLUDES}}" >> "$GITHUB_OUTPUT"
+          echo "=== Matrix: ${INCLUDES}"
+
+  build-push:
+    needs: detect
+    if: ${{ fromJson(needs.detect.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write         # cosign keyless signing via OIDC
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ matrix.image_tag }}
+            type=raw,value=${{ matrix.branch }}
+          labels: |
+            org.opencontainers.image.title=Odoo ${{ matrix.branch }}
+            org.opencontainers.image.description=Odoo ${{ matrix.branch }} with OCA addons (commit ${{ matrix.sha }}, ${{ matrix.date }})
+            org.opencontainers.image.version=${{ matrix.image_tag }}
+            org.opencontainers.image.vendor=sergio-bershadsky
+            org.opencontainers.image.licenses=LGPL-3.0-or-later
+            org.opencontainers.image.base.name=docker.io/library/odoo:${{ matrix.branch }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./odoo
+          build-args: |
+            ODOO_VERSION=${{ matrix.branch }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=odoo-${{ matrix.branch }}
+          cache-to: type=gha,scope=odoo-${{ matrix.branch }},mode=max
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign sign --yes "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}"
+
+      - name: Scan for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.image_tag }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: 0          # Don't fail the build; report only

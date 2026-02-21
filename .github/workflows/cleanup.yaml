@@ -1,0 +1,22 @@
+name: "Cleanup: Untagged Manifests"
+
+on:
+  schedule:
+    - cron: "0 5 * * 0"      # Weekly on Sunday at 05:00 UTC
+  workflow_dispatch: {}
+
+# Tagged images are NEVER deleted — storage is free on public ghcr.io.
+# Only untagged manifests (orphaned multi-arch layers) are pruned.
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete untagged manifests
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          package: odoo
+          delete-untagged: true
