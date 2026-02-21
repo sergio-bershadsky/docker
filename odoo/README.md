@@ -3,6 +3,29 @@
 Custom Odoo Docker images with pre-installed OCA addons, published to
 `ghcr.io/sergio-bershadsky/odoo`.
 
+## Stateless backend design
+
+This image is built for **stateless Odoo deployments** where nothing is stored on
+the local filesystem:
+
+- **HTTP sessions** are stored in PostgreSQL via `session_db` (not in `/tmp` or local files)
+- **File attachments** are stored in S3-compatible object storage via `fs_attachment` (not in the local filestore)
+- **Database** is external (PostgreSQL)
+
+This makes the container fully disposable and horizontally scalable. It works with
+any platform that runs stateless containers:
+
+- Kubernetes (via the companion [Helm chart](https://github.com/sergio-bershadsky/helm))
+- AWS ECS / Fargate
+- Google Cloud Run / App Engine
+- Azure Container Apps
+- Heroku
+- Fly.io
+- Docker Compose (local development)
+
+No persistent volumes are required on the application tier. The only stateful
+components are PostgreSQL and S3 storage, both managed externally.
+
 ## Tracked branches
 
 | Branch | Base image | Registry tag |
