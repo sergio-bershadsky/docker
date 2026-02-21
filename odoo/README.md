@@ -25,11 +25,19 @@ Custom Odoo Docker images with pre-installed OCA addons, published to
 
 | Tag | Example | Description |
 |-----|---------|-------------|
-| `<branch>-<YYYYMMDD>` | `18.0-20250220` | Pinned to upstream commit date |
+| `<branch>-<YYYYMMDD>` | `18.0-20260217` | Pinned to official Odoo nightly release date |
 | `<branch>` | `18.0` | Rolling, always the latest build |
 
 All images are multi-arch (amd64 + arm64).
 Tagged images are never deleted.
+
+## How builds are triggered
+
+The CI monitors the official [`odoo/docker`](https://github.com/odoo/docker) repo
+daily. Each branch Dockerfile contains an `ARG ODOO_RELEASE=YYYYMMDD` that pins the
+exact nightly build. When Odoo publishes a new nightly (updating `ODOO_RELEASE`), the
+CI detects it and rebuilds our image. This ensures `FROM odoo:18.0` always resolves
+to a Docker Hub image that actually exists.
 
 ## Usage
 

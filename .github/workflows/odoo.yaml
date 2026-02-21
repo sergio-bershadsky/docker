@@ -16,7 +16,7 @@ jobs:
     outputs:
       matrix: ${{ steps.check.outputs.matrix }}
     steps:
-      - name: Check for new Odoo commits
+      - name: Detect new Odoo nightly releases
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,22 +32,26 @@ jobs:
           for BRANCH in $BRANCHES; do
             echo "--- ${BRANCH} ---"
 
-            # Get latest commit date + short SHA from odoo/odoo branch
-            COMMIT_JSON=$(gh api "repos/odoo/odoo/branches/${BRANCH}" \
-              --jq '{date: .commit.commit.committer.date, sha: .commit.sha}' 2>/dev/null || true)
+            # Fetch the official Dockerfile from odoo/docker to get ODOO_RELEASE
+            DOCKERFILE=$(curl -sf \
+              "https://raw.githubusercontent.com/odoo/docker/master/${BRANCH}/Dockerfile" || true)
 
-            if [ -z "$COMMIT_JSON" ] || [ "$COMMIT_JSON" = "null" ]; then
-              echo "  Branch not found, skipping"
+            if [ -z "$DOCKERFILE" ]; then
+              echo "  No Dockerfile at odoo/docker/${BRANCH}, skipping"
               continue
             fi
 
-            COMMIT_DATE=$(echo "$COMMIT_JSON" | jq -r '.date')
-            COMMIT_SHA=$(echo "$COMMIT_JSON" | jq -r '.sha' | head -c 7)
-            DATE_TAG=$(date -u -d "$COMMIT_DATE" +%Y%m%d 2>/dev/null \
-              || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$COMMIT_DATE" +%Y%m%d)
+            # Parse ODOO_RELEASE (nightly date, e.g. 20260217) and ODOO_SHA
+            ODOO_RELEASE=$(echo "$DOCKERFILE" | grep -oP '(?<=ARG ODOO_RELEASE=)\S+' || true)
+            ODOO_SHA=$(echo "$DOCKERFILE" | grep -oP '(?<=ARG ODOO_SHA=)\S+' | head -c 7 || true)
 
-            IMAGE_TAG="${BRANCH}-${DATE_TAG}"
-            echo "  Latest commit: ${COMMIT_SHA} (${DATE_TAG})"
+            if [ -z "$ODOO_RELEASE" ]; then
+              echo "  Could not parse ODOO_RELEASE, skipping"
+              continue
+            fi
+
+            IMAGE_TAG="${BRANCH}-${ODOO_RELEASE}"
+            echo "  Official nightly: ${ODOO_RELEASE} (sha: ${ODOO_SHA})"
 
             # Check if we already built this tag
             TAG_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
@@ -63,9 +67,9 @@ jobs:
             INCLUDES=$(echo "$INCLUDES" | jq -c \
               --arg branch "$BRANCH" \
               --arg tag "$IMAGE_TAG" \
-              --arg sha "$COMMIT_SHA" \
-              --arg date "$DATE_TAG" \
-              '. + [{"branch": $branch, "image_tag": $tag, "sha": $sha, "date": $date}]')
+              --arg sha "$ODOO_SHA" \
+              --arg release "$ODOO_RELEASE" \
+              '. + [{"branch": $branch, "image_tag": $tag, "sha": $sha, "release": $release}]')
           done
 
           echo "matrix={\"include\":${INCLUDES}}" >> "$GITHUB_OUTPUT"
@@ -111,7 +115,7 @@ jobs:
             type=raw,value=${{ matrix.branch }}
           labels: |
             org.opencontainers.image.title=Odoo ${{ matrix.branch }}
-            org.opencontainers.image.description=Odoo ${{ matrix.branch }} with OCA addons (commit ${{ matrix.sha }}, ${{ matrix.date }})
+            org.opencontainers.image.description=Odoo ${{ matrix.branch }} with OCA addons (nightly ${{ matrix.release }})
             org.opencontainers.image.version=${{ matrix.image_tag }}
             org.opencontainers.image.vendor=sergio-bershadsky
             org.opencontainers.image.licenses=LGPL-3.0-or-later

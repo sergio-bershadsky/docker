@@ -12,9 +12,9 @@ Custom Docker images published to `ghcr.io/sergio-bershadsky/`.
 
 A scheduled GitHub Actions workflow runs daily and:
 
-1. Queries the latest commit date on each upstream branch
+1. Checks [`odoo/docker`](https://github.com/odoo/docker) Dockerfiles for new `ODOO_RELEASE` nightly dates
 2. Checks if the corresponding image tag already exists in ghcr.io
-3. Builds and pushes only when new upstream commits are detected
+3. Builds and pushes only when a new official nightly is published
 4. Signs images with cosign (keyless, Sigstore)
 5. Generates SBOM and provenance attestations
 6. Scans for vulnerabilities with Trivy
