@@ -4,7 +4,7 @@
 >
 > Image: [`ghcr.io/sergio-bershadsky/odoo`](https://github.com/sergio-bershadsky/docker/pkgs/container/odoo)
 >
-> Updated: 2026-05-03
+> Updated: 2026-05-04
 
 ## 17.0
 
