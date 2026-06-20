@@ -4,11 +4,12 @@
 >
 > Image: [`ghcr.io/sergio-bershadsky/odoo`](https://github.com/sergio-bershadsky/docker/pkgs/container/odoo)
 >
-> Updated: 2026-06-19
+> Updated: 2026-06-20
 
 ## 17.0
 
 - `17.0` *(rolling — latest build)*
+- `17.0-20260619`
 - `17.0-20260609`
 - `17.0-20260528`
 - `17.0-20260513`
@@ -22,6 +23,7 @@
 ## 18.0
 
 - `18.0` *(rolling — latest build)*
+- `18.0-20260619`
 - `18.0-20260609`
 - `18.0-20260528`
 - `18.0-20260513`
@@ -35,6 +37,7 @@
 ## 19.0
 
 - `19.0` *(rolling — latest build)*
+- `19.0-20260619`
 - `19.0-20260609`
 - `19.0-20260528`
 - `19.0-20260513`
